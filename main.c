@@ -2,16 +2,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <locale.h>
 
 #define SIZE 10
 #define ITEMS_COUNT 10
 #define NAME_LEN 32
 #define LINE_LEN 256
+#define MAX_RESOURCES 100
 
 // Название предметов
 char itemNames[ITEMS_COUNT][NAME_LEN] = {
-	"Пусто", "Дерево", "Камень", "Семена", "Кирка",
-	"Яблоко", "Факел", "Сено", "Ведро", "Мясо"
+	"Empty", "Wood", "Stone", "Seeds", "Pickaxe",
+	"Apple", "Torch", "Hay", "Bucket", "Meat"
 };
 // Время
 int current_day = 1;
@@ -27,37 +29,65 @@ int readInt(void) {
 
 		if (result == 1) {
 			while (getchar() != '\n');
-				return number;
+			return number;
 		}
 		if (result == EOF) {
 			return 0;
 		}
-		printf("Ошибка. Введите целое число: ");
+		printf("Error. Enter an integer: ");
 		while (getchar() != '\n');
 	}
 }
 
-// Показать инвентарь
-void showInventory(const int inventory[]) {
-	int i;
-	printf("\n=== ИНВЕНТАРЬ ===");
-	for (i = 0; i < SIZE; i++) {
-		printf("Слот %d: [%d] %s\n",
-			i, inventory[i], itemNames[inventory[i]]);
+// Удаляет переход на новую строку в конце текста
+void removeNewline(char text[]) {
+	int length = strlen(text);
+	if (length > 0 && text[length - 1] == '\n') {
+		text[length - 1] = '\0';
 	}
 }
+
+// Загружает названия предметов из items.txt
+void loadItemNames(void) {
+	FILE* file = fopen("items.txt", "r");
+	int id;
+	char name[NAME_LEN];
+
+	if (file == NULL) {
+		printf("File items.txt not found. Using default English names.\n");
+		return;
+	}
+
+	while (fscanf(file, "%d %31s", &id, name) == 2) {
+		if (id >= 0 && id < ITEMS_COUNT) {
+			strcpy(itemNames[id], name);
+		}
+	}
+	fclose(file);
+}
+
+// Показать инвентарь
+void showInventory(int inventory[]) {
+	int i;
+	printf("\n=== ИНВЕНТАРЬ ===\n");
+	for (i = 0; i < SIZE; i++) {
+		printf("Слот %d: [%d] %s\n", i, inventory[i], itemNames[inventory[i]]);
+	}
+}
+
 // Показать текущее время
 void showTime(void) {
-	printf("Текущее время: День %d, %02d:00\n" , current_day, current_hour);
+	printf("Current time: Day %d, %02d:00\n", current_day, current_hour);
 }
+// Перемотать время
 void work(void) {
 	int hours;
 
-	printf("Сколько часов работать? ");
+	printf("How many hours to work? ");
 	hours = readInt();
 
 	if (hours < 0) {
-		printf("Количество часов не может быть отрицательным.\n");
+		printf("The number of hours cannot be negative.\n");
 		return;
 	}
 	current_hour += hours;
@@ -68,45 +98,44 @@ void work(void) {
 }
 //  Положить предмет в слот
 void addItem(int inventory[]) {
-	int slot;
-	int id;
+	int slot, id;
 
-	printf("Введите номер слота (0-9): ");
+	printf("Enter the slot number (0-9): ");
 	slot = readInt();
 
 	if (slot < 0 || slot >= SIZE) {
-		printf("Такого слота нет.\n");
-			return;
+		printf("There is no such slot.\n");
+		return;
 	}
-	printf("Введите ID предмемета (0-9): ");
+	printf("Enter the item ID (0-9): ");
 	id = readInt();
 	if (id < 0 || id >= ITEMS_COUNT) {
-		printf("Такого предмета нет.\n");
+		printf("There is no such item.\n");
 		return;
 	}
 	inventory[slot] = id;
-	printf("Предмет добавлен в слот %d.\n", slot);
+	printf("Item added to slot %d.\n", slot);
 }
 // Выбросить предмет
 void dropItem(int inventory[]) {
 	int slot;
 
-	printf("Введите номер слота(0-9): ");
+	printf("Enter the slot number(0-9): ");
 	slot = readInt();
 
 	if (slot < 0 || slot >= SIZE) {
-		printf("Такого слота нет.\n");
+		printf("There is no such slot.\n");
 		return;
 	}
 	inventory[slot] = 0;
-	printf("Слот %d очищен.\n", slot);
+	printf("Slot %d cleared.\n", slot);
 }
 // Перевернуть инвентарь
 void reverseInventory(int inventory[]) {
 	int i;
 	int temp;
 
-	printf("Инвентарь до переворота:\n");
+	printf("Inventory before reversing:\n");
 	showInventory(inventory);
 
 	for (i = 0; i < SIZE / 2; i++) {
@@ -114,24 +143,24 @@ void reverseInventory(int inventory[]) {
 		inventory[i] = inventory[SIZE - 1 - i];
 		inventory[SIZE - 1 - i] = temp;
 	}
-	printf("\nИнвентарь после переворота:\n");
+	printf("\nInventory after reversing:\n");
 	showInventory(inventory);
 }
 int main(void) {
 
-	int inventory[SIZE] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+	int inventory[SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
 	int choice;
 
 	while (1) {
-		printf("\n=== МЕНЮ ФЕРМЕРА ===\n");
-		printf("[1] Посмотреть время\n");
-		printf("[2] Промотать время\n");
-		printf("[3] Посмотреть инвентарь\n");
-		printf("[4] Положить предмет\n");
-		printf("[5] Выбросить предмет\n");
-		printf("[6] Инверсия карманов\n");
-		printf("[0] Выход\n");
-		printf("Ваш выбор: ");
+		printf("\n=== FARMER MENU ===\n");
+		printf("[1] View time\n");
+		printf("[2] Skip time\n");
+		printf("[3] View inventory\n");
+		printf("[4] Put item\n");
+		printf("[5] Drop item\n");
+		printf("[6] Reverse pockets\n");
+		printf("[0] Exit\n");
+		printf("Your choice: ");
 
 		choice = readInt();
 
@@ -161,11 +190,11 @@ int main(void) {
 			break;
 
 		case 0:
-			printf("Программа завершена.\n");
+			printf("Program terminated.\n");
 			return 0;
 
 		default:
-			printf("Неверный пункт меню.\n");
+			printf("Invalid menu item.\n");
 		}
 	}
 	return 0;
