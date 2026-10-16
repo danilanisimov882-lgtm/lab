@@ -1,0 +1,10 @@
+0 Empty
+1 Wood
+2 Stone
+3 Seeds
+4 Pickaxe
+5 Apple
+6 Torch
+7 Hay
+8 Bucket
+9 Meat

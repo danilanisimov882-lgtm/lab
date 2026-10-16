@@ -1,0 +1,6 @@
+Wood 10
+Stone 5
+Wood 15
+Seeds 4
+Stone 8
+Wood 2
