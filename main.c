@@ -1,8 +1,7 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <locale.h>
 
 #define SIZE 10
 #define ITEMS_COUNT 10
@@ -69,9 +68,9 @@ void loadItemNames(void) {
 // Показать инвентарь
 void showInventory(int inventory[]) {
 	int i;
-	printf("\n=== ИНВЕНТАРЬ ===\n");
+	printf("\n=== INVENTORY ===\n");
 	for (i = 0; i < SIZE; i++) {
-		printf("Слот %d: [%d] %s\n", i, inventory[i], itemNames[inventory[i]]);
+		printf("Slot %d: [%d] %s\n", i, inventory[i], itemNames[inventory[i]]);
 	}
 }
 
@@ -187,11 +186,11 @@ void saveDiary(char farmerName[], int inventory[]) {
 	int i;
 
 	if (file == NULL) {
-		printf("	Failed to open diary.txt\n");
+		printf("Failed to open diary.txt\n");
 		return;
 	}
 
-	fprintf(file, "	Farmer's diary: %s\n", farmerName);
+	fprintf(file, "Farmer's diary: %s\n", farmerName);
 	fprintf(file, "Day %d, time %02d:00\n", current_day, current_hour);
 	fprintf(file, "	Inventory:\n");
 	for (i = 0; i < SIZE; i++) {
@@ -216,14 +215,74 @@ void countResources(void) {
 	int badLines = 0;
 
 	if (input == NULL) {
-		printf("Failed to open input.txt.\n");
+		printf("Failed to open input.txt\n");
 		return;
 	}
 
+	// Читает файл построчно: в каждой строке название и количество
+	while (fgets(line, sizeof(line), input) != NULL) {
+		if (sscanf(line, "%31s %d", name, &amount) != 2) {
+			badLines++;
+			continue;
+		}
+		if (amount < 0) {
+			badLines++;
+			continue;
+		}
+
+		found = 0;
+		for (i = 0; i < count; i++) {
+			if (strcmp(names[i], name) == 0) {
+				amounts[i] += amount;
+				found = 1;
+				break;
+			}
+		}
+
+		if (found == 0 && count < MAX_RESOURCES) {
+			strcpy(names[count], name);
+			amounts[count] = amount;
+			count++;
+		}
+	}
+	fclose(input);
+
+	output = fopen("output.txt", "w");
+	if (output == NULL) {
+		printf("Failed to create output.txt\n");
+		return;
+	}
+
+	printf("\n=== RESOURCE SUMMARY ===\n");
+	fprintf(output, "Resource summary\n");
+	for (i = 0; i < count; i++) {
+		printf("%s: %d psc.\n", names[i], amounts[i]);
+		fprintf(output, "%s: %d psc.\n", names[i], amounts[i]);
+	}
+	printf("Number of different resources: %d\n", count);
+	printf("Skipped invalid lines: %d\n", badLines);
+	fprintf(output, "Number of different resources: %d\n", count);
+	fprintf(output, "Skipped invalid lines: %d\n", badLines);
+
+	fclose(output);
+	printf("Result written to output.txt\n");
+}
+
+// Меню
 int main(void) {
 
 	int inventory[SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
 	int choice;
+	char farmerName[NAME_LEN];
+
+	loadItemNames();
+
+	printf("What is the farmer's name? ");
+	fgets(farmerName, sizeof(farmerName), stdin);
+	removeNewline(farmerName);
+	if (strlen(farmerName) == 0) {
+		strcpy(farmerName, "Farmer");
+	}
 
 	while (1) {
 		printf("\n=== FARMER MENU ===\n");
@@ -233,6 +292,9 @@ int main(void) {
 		printf("[4] Put item\n");
 		printf("[5] Drop item\n");
 		printf("[6] Reverse pockets\n");
+		printf("[7] Search item by name\n");
+		printf("[8] Save state to diary\n");
+		printf("[9] Count resources from input.txt\n");
 		printf("[0] Exit\n");
 		printf("Your choice: ");
 
@@ -261,6 +323,18 @@ int main(void) {
 
 		case 6:
 			reverseInventory(inventory);
+			break;
+
+		case 7:
+			searchItem(inventory);
+			break;
+
+		case 8:
+			saveDiary(farmerName, inventory);
+			break;
+
+		case 9:
+			countResources();
 			break;
 
 		case 0:
