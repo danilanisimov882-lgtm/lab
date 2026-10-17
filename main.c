@@ -132,8 +132,7 @@ void dropItem(int inventory[]) {
 }
 // Перевернуть инвентарь
 void reverseInventory(int inventory[]) {
-	int i;
-	int temp;
+	int i, temp;
 
 	printf("Inventory before reversing:\n");
 	showInventory(inventory);
@@ -146,6 +145,81 @@ void reverseInventory(int inventory[]) {
 	printf("\nInventory after reversing:\n");
 	showInventory(inventory);
 }
+
+// Ищет предмет по названию
+void searchItem(int inventory[]) {
+	char name[NAME_LEN];
+	int id = -1;
+	int i;
+	int found = 0;
+
+	printf("Enter the item name: ");
+	fgets(name, sizeof(name), stdin);
+	removeNewline(name);
+
+	for (i = 0; i < ITEMS_COUNT; i++) {
+		if (strcmp(name, itemNames[i]) == 0) {
+			id = i;
+			break;
+		}
+	}
+
+	if (id == -1) {
+		printf("There is no such item in the catalog.\n");
+		return;
+	}
+
+	for (i = 0; i < SIZE; i++) {
+		if (inventory[i] == id) {
+			printf("Item found in slot %d.\n", i);
+			found = 1;
+		}
+	}
+
+	if (found == 0) {
+		printf("The item is in the catalog, but not in the inventory.\n");
+	}
+}
+
+// Записывает текущее состояние фермера в дневник
+void saveDiary(char farmerName[], int inventory[]) {
+	FILE* file = fopen("diary.txt", "a");
+	int i;
+
+	if (file == NULL) {
+		printf("	Failed to open diary.txt\n");
+		return;
+	}
+
+	fprintf(file, "	Farmer's diary: %s\n", farmerName);
+	fprintf(file, "Day %d, time %02d:00\n", current_day, current_hour);
+	fprintf(file, "	Inventory:\n");
+	for (i = 0; i < SIZE; i++) {
+		fprintf(file, "Slot %d: %s\n", i, itemNames[inventory[i]]);
+	}
+	fprintf(file, "-------------------------\n");
+	fclose(file);
+	printf("	Entry saved to diary.txt\n");
+}
+
+// Суммирует одинаковые ресурсы из input.txt
+void countResources(void) {
+	FILE* input = fopen("input.txt", "r");
+	FILE* output;
+	char names[MAX_RESOURCES][NAME_LEN];
+	int amounts[MAX_RESOURCES];
+	char name[NAME_LEN];
+	char line[LINE_LEN];
+	int amount;
+	int count = 0;
+	int i, found;
+	int badLines = 0;
+
+	if (input == NULL) {
+		printf("Failed to open input.txt.\n");
+		return;
+	}
+
 int main(void) {
 
 	int inventory[SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
